@@ -32,10 +32,9 @@ const MainFeature = ({ activeTab }) => {
   const [currentSurvey, setCurrentSurvey] = useState(null)
   const [questions, setQuestions] = useState([])
   const [newQuestion, setNewQuestion] = useState({ type: 'text', text: '', required: false, options: [] })
-  const [showQuestionForm, setShowQuestionForm] = useState(false)
+const [showQuestionForm, setShowQuestionForm] = useState(false)
   const [showConditionalBuilder, setShowConditionalBuilder] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState(null)
-const [editingQuestion, setEditingQuestion] = useState(null)
 
   const questionTypes = [
     { id: 'text', label: 'Short Text', icon: 'Type', description: 'Single line text input' },
@@ -706,7 +705,7 @@ const CreateSurveyModal = ({ onCreateSurvey }) => {
                   className="input-field resize-none"
                 />
               </div>
-              <div className="flex gap-3">
+<div className="flex gap-3">
                 <button type="submit" className="btn-primary flex-1">Create Survey</button>
                 <button 
                   type="button"
@@ -717,12 +716,12 @@ const CreateSurveyModal = ({ onCreateSurvey }) => {
                 </button>
               </div>
             </form>
-</motion.div>
+          </motion.div>
         </div>
       )}
     </>
   )
-}
+
 // Conditional Logic Builder Component
 const ConditionalLogicBuilder = ({ question, questions, conditionTypes, actionTypes, onUpdate, onClose }) => {
   const [conditionalLogic, setConditionalLogic] = useState(question.conditionalLogic || { conditions: [], actions: [] })
@@ -1037,7 +1036,7 @@ const ConditionalRuleItem = ({ condition, index, availableQuestions, conditionTy
           <strong>Rule:</strong> If Question {availableQuestions.findIndex(q => q.id === condition.targetQuestion) + 1} {' '}
           {selectedConditionType?.label.toLowerCase()} {needsValue && condition.value && `"${condition.value}"`}
         </div>
-      )}
+)}
     </div>
   )
 }
