@@ -29,16 +29,34 @@ const MainFeature = ({ activeTab }) => {
     }
   ])
 
-  const [currentSurvey, setCurrentSurvey] = useState(null)
+const [currentSurvey, setCurrentSurvey] = useState(null)
   const [questions, setQuestions] = useState([])
   const [newQuestion, setNewQuestion] = useState({ type: 'text', text: '', required: false, options: [] })
   const [showQuestionForm, setShowQuestionForm] = useState(false)
-
-  const questionTypes = [
+  const [showConditionalBuilder, setShowConditionalBuilder] = useState(false)
+  const [editingQuestion, setEditingQuestion] = useState(null)
+const questionTypes = [
     { id: 'text', label: 'Short Text', icon: 'Type', description: 'Single line text input' },
     { id: 'multiple', label: 'Multiple Choice', icon: 'CheckSquare', description: 'Select one option' },
     { id: 'rating', label: 'Rating Scale', icon: 'Star', description: '1-5 star rating' },
     { id: 'dropdown', label: 'Dropdown', icon: 'ChevronDown', description: 'Select from dropdown' }
+  ]
+
+  const conditionTypes = [
+    { id: 'equals', label: 'equals' },
+    { id: 'not_equals', label: 'does not equal' },
+    { id: 'contains', label: 'contains' },
+    { id: 'greater_than', label: 'is greater than' },
+    { id: 'less_than', label: 'is less than' },
+    { id: 'is_empty', label: 'is empty' },
+    { id: 'is_not_empty', label: 'is not empty' }
+  ]
+
+  const actionTypes = [
+    { id: 'show_question', label: 'Show Question' },
+    { id: 'hide_question', label: 'Hide Question' },
+    { id: 'jump_to_question', label: 'Jump to Question' },
+    { id: 'skip_to_end', label: 'Skip to End' }
   ]
 
   useEffect(() => {
@@ -72,10 +90,14 @@ const MainFeature = ({ activeTab }) => {
       return
     }
 
-    const question = {
+const question = {
       id: Date.now().toString(),
       ...newQuestion,
-      order: questions.length + 1
+      order: questions.length + 1,
+      conditionalLogic: {
+        conditions: [],
+        actions: []
+      }
     }
 
     setQuestions([...questions, question])
@@ -88,13 +110,19 @@ const MainFeature = ({ activeTab }) => {
     setQuestions(questions.filter(q => q.id !== id))
     toast.success('Question removed!')
   }
-
-  const generateShareLink = (surveyId) => {
+const generateShareLink = (surveyId) => {
     const link = `${window.location.origin}/survey/${surveyId}`
     navigator.clipboard.writeText(link)
     toast.success('Survey link copied to clipboard!')
   }
 
+  const handleUpdateConditionalLogic = (questionId, conditionalLogic) => {
+    setQuestions(questions.map(q => 
+      q.id === questionId ? { ...q, conditionalLogic } : q
+    ))
+  }
+
+  const renderDashboard = () => (
   const renderDashboard = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -371,15 +399,27 @@ const MainFeature = ({ activeTab }) => {
                         <span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
                           Required
                         </span>
-                      )}
+)}
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDeleteQuestion(question.id)}
-                    className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                  >
-                    <ApperIcon name="Trash2" className="h-4 w-4" />
-                  </button>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        setEditingQuestion(question)
+                        setShowConditionalBuilder(true)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-all"
+                      title="Add Conditional Logic"
+                    >
+                      <ApperIcon name="GitBranch" className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteQuestion(question.id)}
+                      className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                    >
+                      <ApperIcon name="Trash2" className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <p className="text-surface-800 font-medium mb-3">{question.text}</p>
                 {question.options && (
@@ -392,9 +432,26 @@ const MainFeature = ({ activeTab }) => {
                     ))}
                   </div>
                 )}
-              </motion.div>
+</motion.div>
             ))}
           </div>
+
+          {/* Conditional Logic Builder */}
+          <AnimatePresence>
+            {showConditionalBuilder && editingQuestion && (
+              <ConditionalLogicBuilder
+                question={editingQuestion}
+                questions={questions}
+                conditionTypes={conditionTypes}
+                actionTypes={actionTypes}
+                onUpdate={(conditionalLogic) => handleUpdateConditionalLogic(editingQuestion.id, conditionalLogic)}
+                onClose={() => {
+                  setShowConditionalBuilder(false)
+                  setEditingQuestion(null)
+                }}
+              />
+            )}
+          </AnimatePresence>
         </div>
       )}
     </motion.div>
@@ -666,6 +723,324 @@ const CreateSurveyModal = ({ onCreateSurvey }) => {
       )}
     </>
   )
+)
+}
+// Conditional Logic Builder Component
+const ConditionalLogicBuilder = ({ question, questions, conditionTypes, actionTypes, onUpdate, onClose }) => {
+  const [conditionalLogic, setConditionalLogic] = useState(question.conditionalLogic || { conditions: [], actions: [] })
+  const addCondition = () => {
+    const newCondition = {
+      id: Date.now().toString(),
+      targetQuestion: '',
+      type: 'equals',
+      value: '',
+      operator: 'and'
+    }
+    setConditionalLogic({
+      ...conditionalLogic,
+      conditions: [...conditionalLogic.conditions, newCondition]
+    })
+  }
+
+  const addAction = () => {
+    const newAction = {
+      id: Date.now().toString(),
+      type: 'show_question',
+      targetQuestion: ''
+    }
+    setConditionalLogic({
+      ...conditionalLogic,
+      actions: [...conditionalLogic.actions, newAction]
+    })
+  }
+
+  const updateCondition = (conditionId, updates) => {
+    setConditionalLogic({
+      ...conditionalLogic,
+      conditions: conditionalLogic.conditions.map(c => 
+        c.id === conditionId ? { ...c, ...updates } : c
+      )
+    })
+  }
+
+  const updateAction = (actionId, updates) => {
+    setConditionalLogic({
+      ...conditionalLogic,
+      actions: conditionalLogic.actions.map(a => 
+        a.id === actionId ? { ...a, ...updates } : a
+      )
+    })
+  }
+
+  const removeCondition = (conditionId) => {
+    setConditionalLogic({
+      ...conditionalLogic,
+      conditions: conditionalLogic.conditions.filter(c => c.id !== conditionId)
+    })
+  }
+
+  const removeAction = (actionId) => {
+    setConditionalLogic({
+      ...conditionalLogic,
+      actions: conditionalLogic.actions.filter(a => a.id !== actionId)
+    })
+  }
+
+  const handleSave = () => {
+    onUpdate(conditionalLogic)
+    onClose()
+    toast.success('Conditional logic saved successfully!')
+  }
+
+  // Get available target questions (only previous questions)
+  const availableQuestions = questions.filter(q => q.id !== question.id)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
+      className="card-neu p-6 border-2 border-purple-200"
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="bg-purple-100 p-2 rounded-lg">
+            <ApperIcon name="GitBranch" className="h-5 w-5 text-purple-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-surface-800">Conditional Logic Builder</h3>
+            <p className="text-sm text-surface-600">Create dynamic branching based on previous answers</p>
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-2 text-surface-400 hover:text-surface-600 hover:bg-surface-100 rounded-lg transition-colors"
+        >
+          <ApperIcon name="X" className="h-4 w-4" />
+        </button>
+      </div>
+
+      {availableQuestions.length === 0 && (
+        <div className="text-center p-6 bg-amber-50 border border-amber-200 rounded-lg">
+          <ApperIcon name="AlertTriangle" className="h-8 w-8 text-amber-500 mx-auto mb-2" />
+          <p className="text-amber-800 font-medium">No Previous Questions Available</p>
+          <p className="text-sm text-amber-600">Add questions before this one to create conditional logic.</p>
+        </div>
+      )}
+
+      {availableQuestions.length > 0 && (
+        <div className="space-y-6">
+          {/* Conditions Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-medium text-surface-800">Conditions</h4>
+              <button onClick={addCondition} className="btn-secondary text-sm px-3 py-1">
+                <ApperIcon name="Plus" className="h-3 w-3 mr-1" />
+                Add Condition
+              </button>
+            </div>
+            
+            {conditionalLogic.conditions.length === 0 ? (
+              <div className="text-center p-4 bg-surface-50 border-2 border-dashed border-surface-300 rounded-lg">
+                <p className="text-surface-500">No conditions added yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {conditionalLogic.conditions.map((condition, index) => (
+                  <ConditionalRuleItem
+                    key={condition.id}
+                    condition={condition}
+                    index={index}
+                    availableQuestions={availableQuestions}
+                    conditionTypes={conditionTypes}
+                    onUpdate={(updates) => updateCondition(condition.id, updates)}
+                    onRemove={() => removeCondition(condition.id)}
+                    showOperator={index > 0}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Actions Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-medium text-surface-800">Actions</h4>
+              <button onClick={addAction} className="btn-secondary text-sm px-3 py-1">
+                <ApperIcon name="Plus" className="h-3 w-3 mr-1" />
+                Add Action
+              </button>
+            </div>
+            
+            {conditionalLogic.actions.length === 0 ? (
+              <div className="text-center p-4 bg-surface-50 border-2 border-dashed border-surface-300 rounded-lg">
+                <p className="text-surface-500">No actions added yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {conditionalLogic.actions.map((action) => (
+                  <div key={action.id} className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="bg-green-100 p-2 rounded">
+                      <ApperIcon name="Zap" className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <select
+                        value={action.type}
+                        onChange={(e) => updateAction(action.id, { type: e.target.value })}
+                        className="input-field text-sm"
+                      >
+                        {actionTypes.map((type) => (
+                          <option key={type.id} value={type.id}>{type.label}</option>
+                        ))}
+                      </select>
+                      {(action.type === 'show_question' || action.type === 'hide_question' || action.type === 'jump_to_question') && (
+                        <select
+                          value={action.targetQuestion}
+                          onChange={(e) => updateAction(action.id, { targetQuestion: e.target.value })}
+                          className="input-field text-sm"
+                        >
+                          <option value="">Select question...</option>
+                          {questions.map((q, idx) => (
+                            <option key={q.id} value={q.id}>Question {idx + 1}: {q.text.substring(0, 30)}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => removeAction(action.id)}
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <ApperIcon name="Trash2" className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Save/Cancel Actions */}
+          <div className="flex gap-3 pt-4 border-t border-surface-200">
+            <button onClick={handleSave} className="btn-primary">
+              <ApperIcon name="Save" className="h-4 w-4 mr-2" />
+              Save Logic
+            </button>
+            <button onClick={onClose} className="btn-secondary">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
+// Conditional Rule Item Component
+const ConditionalRuleItem = ({ condition, index, availableQuestions, conditionTypes, onUpdate, onRemove, showOperator }) => {
+  const selectedQuestion = availableQuestions.find(q => q.id === condition.targetQuestion)
+  const selectedConditionType = conditionTypes.find(c => c.id === condition.type)
+  const needsValue = !['is_empty', 'is_not_empty'].includes(condition.type)
+
+  return (
+    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      {showOperator && (
+        <div className="mb-3">
+          <select
+            value={condition.operator}
+            onChange={(e) => onUpdate({ operator: e.target.value })}
+            className="input-field text-sm w-24"
+          >
+            <option value="and">AND</option>
+            <option value="or">OR</option>
+          </select>
+        </div>
+      )}
+      
+      <div className="flex items-center space-x-3">
+        <div className="bg-blue-100 p-2 rounded">
+          <ApperIcon name="HelpCircle" className="h-4 w-4 text-blue-600" />
+        </div>
+        
+        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Target Question */}
+          <select
+            value={condition.targetQuestion}
+            onChange={(e) => onUpdate({ targetQuestion: e.target.value })}
+            className="input-field text-sm"
+          >
+            <option value="">Select question...</option>
+            {availableQuestions.map((q, idx) => (
+              <option key={q.id} value={q.id}>
+                Question {idx + 1}: {q.text.substring(0, 30)}
+              </option>
+            ))}
+          </select>
+
+          {/* Condition Type */}
+          <select
+            value={condition.type}
+            onChange={(e) => onUpdate({ type: e.target.value })}
+            className="input-field text-sm"
+          >
+            {conditionTypes.map((type) => (
+              <option key={type.id} value={type.id}>{type.label}</option>
+            ))}
+          </select>
+
+          {/* Condition Value */}
+          {needsValue && (
+            <div>
+              {selectedQuestion && (selectedQuestion.type === 'multiple' || selectedQuestion.type === 'dropdown') ? (
+                <select
+                  value={condition.value}
+                  onChange={(e) => onUpdate({ value: e.target.value })}
+                  className="input-field text-sm"
+                >
+                  <option value="">Select option...</option>
+                  {selectedQuestion.options?.map((option, idx) => (
+                    <option key={idx} value={option}>{option}</option>
+                  ))}
+                </select>
+              ) : selectedQuestion && selectedQuestion.type === 'rating' ? (
+                <select
+                  value={condition.value}
+                  onChange={(e) => onUpdate({ value: e.target.value })}
+                  className="input-field text-sm"
+                >
+                  <option value="">Select rating...</option>
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <option key={rating} value={rating}>{rating} Star{rating !== 1 ? 's' : ''}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="Enter value..."
+                  value={condition.value}
+                  onChange={(e) => onUpdate({ value: e.target.value })}
+                  className="input-field text-sm"
+                />
+              )}
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={onRemove}
+          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+        >
+          <ApperIcon name="Trash2" className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Rule Preview */}
+      {condition.targetQuestion && condition.type && (
+        <div className="mt-3 p-2 bg-white border border-blue-300 rounded text-xs text-blue-800">
+          <strong>Rule:</strong> If Question {availableQuestions.findIndex(q => q.id === condition.targetQuestion) + 1} {' '}
+          {selectedConditionType?.label.toLowerCase()} {needsValue && condition.value && `"${condition.value}"`}
+        </div>
+      )}
+    </div>
+)
 }
 
 export default MainFeature
