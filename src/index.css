@@ -52,12 +52,12 @@
     @apply bg-white/70 backdrop-blur-sm border border-surface-200/50
            rounded-2xl shadow-neu-light hover:shadow-soft
            transition-all duration-300;
-  }
+}
 
   .survey-card {
     @apply card-neu p-6 hover:scale-105 transform
            hover:border-primary/30 cursor-pointer
-           group relative overflow-hidden;
+           relative overflow-hidden;
   }
 
   .question-builder {
