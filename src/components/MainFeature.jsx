@@ -27,21 +27,22 @@ const MainFeature = ({ activeTab }) => {
       status: 'draft',
       questions: []
     }
-  ])
+])
 
-const [currentSurvey, setCurrentSurvey] = useState(null)
+  const [currentSurvey, setCurrentSurvey] = useState(null)
   const [questions, setQuestions] = useState([])
   const [newQuestion, setNewQuestion] = useState({ type: 'text', text: '', required: false, options: [] })
   const [showQuestionForm, setShowQuestionForm] = useState(false)
   const [showConditionalBuilder, setShowConditionalBuilder] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState(null)
-const questionTypes = [
+const [editingQuestion, setEditingQuestion] = useState(null)
+
+  const questionTypes = [
     { id: 'text', label: 'Short Text', icon: 'Type', description: 'Single line text input' },
     { id: 'multiple', label: 'Multiple Choice', icon: 'CheckSquare', description: 'Select one option' },
     { id: 'rating', label: 'Rating Scale', icon: 'Star', description: '1-5 star rating' },
     { id: 'dropdown', label: 'Dropdown', icon: 'ChevronDown', description: 'Select from dropdown' }
   ]
-
   const conditionTypes = [
     { id: 'equals', label: 'equals' },
     { id: 'not_equals', label: 'does not equal' },
@@ -88,9 +89,9 @@ const questionTypes = [
     if (!newQuestion.text.trim()) {
       toast.error('Please enter a question text')
       return
-    }
+}
 
-const question = {
+    const question = {
       id: Date.now().toString(),
       ...newQuestion,
       order: questions.length + 1,
@@ -108,21 +109,19 @@ const question = {
 
   const handleDeleteQuestion = (id) => {
     setQuestions(questions.filter(q => q.id !== id))
-    toast.success('Question removed!')
+toast.success('Question removed!')
   }
-const generateShareLink = (surveyId) => {
+
+  const generateShareLink = (surveyId) => {
     const link = `${window.location.origin}/survey/${surveyId}`
     navigator.clipboard.writeText(link)
     toast.success('Survey link copied to clipboard!')
   }
-
-  const handleUpdateConditionalLogic = (questionId, conditionalLogic) => {
+const handleUpdateConditionalLogic = (questionId, conditionalLogic) => {
     setQuestions(questions.map(q => 
       q.id === questionId ? { ...q, conditionalLogic } : q
     ))
   }
-
-  const renderDashboard = () => (
   const renderDashboard = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -396,10 +395,10 @@ const generateShareLink = (surveyId) => {
                         {questionTypes.find(t => t.id === question.type)?.label}
                       </span>
                       {question.required && (
-                        <span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
+<span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
                           Required
                         </span>
-)}
+                      )}
                     </div>
                   </div>
                   <div className="flex space-x-2">
@@ -430,9 +429,9 @@ const generateShareLink = (surveyId) => {
                         <span>{option}</span>
                       </div>
                     ))}
-                  </div>
+</div>
                 )}
-</motion.div>
+              </motion.div>
             ))}
           </div>
 
@@ -718,16 +717,16 @@ const CreateSurveyModal = ({ onCreateSurvey }) => {
                 </button>
               </div>
             </form>
-          </motion.div>
+</motion.div>
         </div>
       )}
     </>
   )
-)
 }
 // Conditional Logic Builder Component
 const ConditionalLogicBuilder = ({ question, questions, conditionTypes, actionTypes, onUpdate, onClose }) => {
   const [conditionalLogic, setConditionalLogic] = useState(question.conditionalLogic || { conditions: [], actions: [] })
+  
   const addCondition = () => {
     const newCondition = {
       id: Date.now().toString(),
@@ -1034,13 +1033,13 @@ const ConditionalRuleItem = ({ condition, index, availableQuestions, conditionTy
 
       {/* Rule Preview */}
       {condition.targetQuestion && condition.type && (
-        <div className="mt-3 p-2 bg-white border border-blue-300 rounded text-xs text-blue-800">
+<div className="mt-3 p-2 bg-white border border-blue-300 rounded text-xs text-blue-800">
           <strong>Rule:</strong> If Question {availableQuestions.findIndex(q => q.id === condition.targetQuestion) + 1} {' '}
           {selectedConditionType?.label.toLowerCase()} {needsValue && condition.value && `"${condition.value}"`}
         </div>
       )}
     </div>
-)
+  )
 }
 
 export default MainFeature
